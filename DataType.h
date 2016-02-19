@@ -56,8 +56,8 @@ typedef Servo Thruster;			//redefinition of servo to thruster
 #define HIGH_SIGNAL_DEAD	1500+30
 
 #define CMD_CAL         0x01
-#define CMD_MEAN        0x02
-#define CMD_MEDIAN      0x04
+#define CMD_MEDIAN      0x02
+#define CMD_MEAN        0x04
 #define CMD_CAPACITY	0x08
 
 #define SUCCESS			0b00000000 //response error definition

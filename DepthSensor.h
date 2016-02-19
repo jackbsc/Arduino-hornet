@@ -20,9 +20,9 @@ class DepthSensor{
 private:
 	uint8_t _pin;
 	uint16_t _rawReading;
-	uint32_t _vcc;
+	uint32_t _vcc = 5000000;
 	uint32_t _volts;
-	int32_t _calVolt;
+	uint32_t _calVolt;
 #if ALGORITHM == 0
 	int32_t _calMin;
 	int32_t _calMax;
@@ -37,7 +37,7 @@ public:
 	int32_t calibrateByMean(void);
 	int32_t calibrateByMedian(void);
     	uint16_t getRawReading(uint8_t channel);
-	uint32_t getVcc(void);
+	uint32_t getVCC(void);
     	uint32_t getVolts(void);
 
 	/*get result by mean technique*/

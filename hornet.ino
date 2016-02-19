@@ -21,7 +21,7 @@ Thruster mainLeft, mainRight, sideLeft, sideRight; //create thruster instance
 
 //global variable definition
 boolean calDepth;
-uint8_t adcFilter = CMD_MEAN;
+uint8_t adcFilter = CMD_MEDIAN;
 uint32_t previousMillis;
 
 void setup() {
@@ -134,9 +134,9 @@ void loop() {
 	if (calDepth == false) {			//if no calibrate depth sensor command is received
 		currentMillis = millis();		//send depth and battery data at approx. 40Hz
 		if (currentMillis - previousMillis > 25) {
-			console.sendDepthData(adcFilter == CMD_MEAN ? depthSensor.getCMByMean() : depthSensor.getCMByMedian()); //choose which depth data to send according to the filter set
+			console.sendDepthData((adcFilter == CMD_MEDIAN) ? (depthSensor.getCMByMedian()) : (depthSensor.getCMByMean())); //choose which depth data to send according to the filter set
 			console.sendCapacity(capacity);
-			console.sendCurrent(current);
+			console.sendCurrent(current);	
 			//if (current > 20.0) {				//if instantaneous current overshoot
 			//	for (uint8_t i = 0; i < 4; i++) {
 			//		dataByte[2 * i + 1] = 0x05;
@@ -148,7 +148,7 @@ void loop() {
 		}
 	}
 	else {
-		depthSensor.calibrateByMedian();
+		depthSensor.calibrateByMean();
 #if ALGORITHM == 0
 		uint32_t calvolt = depthSensor.calibrateByMedian();
 		eeprom_update_dword((uint32_t*)5, calvolt);		//save the value to eeprom

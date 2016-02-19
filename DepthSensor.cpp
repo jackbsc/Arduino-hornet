@@ -7,10 +7,10 @@ DepthSensor depthSensor;						   //create depth sensor instance
 void DepthSensor::attach(uint8_t pin){
 	_pin = pin;
 #if ALGORITHM == 0
-	getVcc();
+	getVCC();
 	_calVolt = eeprom_read_dword((uint32_t*)5);			//read the last saved value
 	_calMin = _calVolt;
-	_calMax = (uint32_t)((float)_vcc * 0.9);
+	_calMax = (uint32_t)((float)_vcc /10 * 9);
 
 #elif ALGORITHM == 1
 	_calVolt = eeprom_read_float((float*)5);			//read the last saved value
@@ -31,7 +31,7 @@ uint16_t DepthSensor::getRawReading(uint8_t channel){
 	_rawReading = constrain(_rawReading, 0, 32767);
 	return _rawReading;
 }
-uint32_t DepthSensor::getVcc(void) {
+uint32_t DepthSensor::getVCC(void) {
 	getRawReading(2);	//Vcc connected to channel 2
 #if ADC_T == ONBAORD
 	_vcc = rawReading*stepSize_10bit;
@@ -40,6 +40,7 @@ uint32_t DepthSensor::getVcc(void) {
 #endif
 	return _vcc;
 }
+
 uint32_t DepthSensor::getVolts(void){
 	getRawReading(0);		//depthsensor input connected to channel 0
 #if ADC_T == ONBOARD
@@ -52,14 +53,16 @@ uint32_t DepthSensor::getVolts(void){
 
 /*get result by mean technique*/
 int32_t DepthSensor::calibrateByMean(void) {
-	getVcc();
 	_calVolt = 0;
-	for (uint8_t i = 0; i < 10; i++)
+	for (uint8_t i = 0; i < 10; i++){
 		_calVolt += getVolts();
+	}
 	_calVolt /= 10;
+
 #if ALGORITHM == 0
 	_calMin = _calVolt;
-	_calMax = (int32_t)((float)_vcc * 0.9);
+	getVCC();
+	_calMax = (int32_t)(_vcc /10 * 90);
 
 #elif ALGORITHM == 1
 	float voltsf = (float)_calVolt / 1000000.0;	//convert to float point and actual volts
@@ -77,6 +80,7 @@ int32_t DepthSensor::getCMByMean(void){
 	for (uint8_t i = 0; i < 10; i++)	   //average out 10 samples
 		volts += getVolts();
 	volts /= 10;
+
 #if ALGORITHM == 0
 	int32_t height = 0;
 	//map micro-volt readings to height of water (in micro-meter)
@@ -85,13 +89,12 @@ int32_t DepthSensor::getCMByMean(void){
 	height = constrain(height, 0, 9000);
 	return height;
 #elif ALGORITHM == 1
-	getVcc();								//get supply voltage
+	getVCC();								//get supply voltage
 	float voltsf = (float)volts / 1000000.0;	//convert to float point and actual volts
 	float vccf = (float)_vcc / 1000000.0;
 	float pressure = (voltsf - 0.1*vccf)*735.19 / vccf;
 	pressure -= _calMin;	//minus the difference of the calibrated volts
 	float depth = pressure * 1000 / RHO_G;		//use the calibrated pressure to calculate actual depth
-	Serial.println(depth);
 	depth = constrain(depth, 0.0, 70.0);
 	return (int32_t)(depth * 100.0 + 0.5);		//return depth in cm
 
@@ -133,11 +136,12 @@ int32_t DepthSensor::calibrateByMedian(void) {
 	_calVolt = volts[4];
 
 #if ALGORITHM == 0
-	getVcc();
 	_calMin = _calVolt;
-	_calMax = (int32_t)((float)_vcc * 0.9);//4500000 - (500000 - _calMin);
+	getVCC();
+	_calMax = (int32_t)(_vcc /10 * 9);//4500000 - (500000 - _calMin);
+
 #elif ALGORITHM == 1
-	getVcc();
+	getVCC();
 	float voltsf = (float)_calVolt / 1000000.0;	//convert to float point and actual volts
 	float vccf = (float)_vcc / 1000000.0;
 	_calMin = (voltsf - 0.1*vccf)*735.19 / vccf;//map to original equation to get Pmin 
@@ -155,6 +159,7 @@ int32_t DepthSensor::getCMByMedian(void) {
 
 	qsort(volts, 9, sizeof(uint32_t), compare);
 	volts_median = volts[4];
+
 #if ALGORITHM == 0
 	int32_t height;
 	height = mapl(volts_median, _calMin, _calMax, 0, 7055);
@@ -164,7 +169,7 @@ int32_t DepthSensor::getCMByMedian(void) {
 	return height;
 
 #elif ALGORITHM == 1
-	getVcc();
+	getVCC();
 	float voltsf = (float)volts_median / 1000000.0;	//convert to float point and actual volts
 	float vccf = (float)_vcc / 1000000.0;
 	float pressure = (voltsf - 0.1*vccf)*735.19 / vccf;
